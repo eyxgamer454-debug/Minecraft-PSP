@@ -1,0 +1,269 @@
+
+#include "world/entity/local_player.h"
+#include "world/level/level.h"
+#include "world/level/world.h"
+#include "world/level/chunk/chunk.h"
+#include "world/difficulty.h"
+#include "client/player/player_state.h"
+#include "client/renderer/item_hand.h"
+#include "client/renderer/particle.h"
+#include "world/level/tile/redstone_ore.h"
+#include <cmath>
+#include <cstdlib>
+#include <pspctrl.h>
+
+extern World g_world;
+
+int   g_autoJump = 1;
+float g_sensitivity = 1.0f;
+
+float g_analogDeadzone = 0.20f;
+int   g_invertY = 0;
+
+LocalPlayer::LocalPlayer(Level* level) : Player(level) {
+    setSize(PLAYER_W, PLAYER_H);
+    heightOffset = PLAYER_EYE;
+    entityRendererId = ER_DEFAULT_RENDERER;
+}
+
+void LocalPlayer::aiStep(unsigned int btn, unsigned char lx, unsigned char ly) {
+    const float LOOK = 7.5f * g_sensitivity;
+
+    sleepTick();
+    if (sleeping) {
+        xo = x; yo = y; zo = z;
+        yRotO = yRot; xRotO = xRot;
+        walkDistO = walkDist;
+        oBob = bob; oTilt = tilt;
+        yBodyRotO = yBodyRot; walkAnimSpeedO = walkAnimSpeed; walkAnimPosO = walkAnimPos;
+        xd = yd = zd = 0.0f;
+        return;
+    }
+
+    xo = x; yo = y; zo = z;
+    yRotO = yRot; xRotO = xRot;
+
+    if (attackTime > 0)       attackTime--;
+    if (hurtTime > 0)         hurtTime--;
+    if (invulnerableTime > 0) invulnerableTime--;
+
+    if (health <= 0 && deathTime < 20) {
+        deathTime++;
+        if (deathTime == 20)
+            particlesMobDeath(x, y - heightOffset, z, bbWidth, bbHeight);
+    }
+
+    {
+        int efx = (int)floorf(x), efz = (int)floorf(z);
+        int efy = (int)floorf(y - PLAYER_EYE);
+        unsigned char feet = worldBlock(&g_world, efx, efy, efz);
+        if (isWaterId(feet) || isLavaId(feet)) fallDistance = 0.0f;
+        if (isLavaId(feet)) lavaHurt();
+
+        if (onFire > 0) { if (onFire % 20 == 0) hurt(0, 1); onFire--; }
+
+        if (isAlive() && isInWall()) hurt(0, 1);
+
+        if (isAlive() && y < -64.0f) { health = 0; die(0); }
+
+        if (level->getDifficulty() == Difficulty::PEACEFUL && isAlive() && health < getMaxHealth()) {
+            static int s_regenTick = 0;
+            if (++s_regenTick >= 12 * 20) { s_regenTick = 0; heal(1); }
+        }
+    }
+
+    if (btn & PSP_CTRL_SQUARE)   yRot += LOOK;
+    if (btn & PSP_CTRL_CIRCLE)   yRot -= LOOK;
+    const float PITCH = g_invertY ? -LOOK : LOOK;
+    if (btn & PSP_CTRL_TRIANGLE) xRot += PITCH;
+    if (btn & PSP_CTRL_CROSS)    xRot -= PITCH;
+    if (xRot >  89.0f) xRot =  89.0f;
+    if (xRot < -89.0f) xRot = -89.0f;
+
+    float xs = (128 - lx) / 127.0f;
+    float yf = (128 - ly) / 127.0f;
+    const float dz = g_analogDeadzone;
+    if (xs > -dz && xs < dz) xs = 0.0f;
+    if (yf > -dz && yf < dz) yf = 0.0f;
+
+    bool jumping = (btn & PSP_CTRL_START) != 0;
+
+    if (flying) {
+        if (jumping)              yd += 0.05f;
+        if (btn & PSP_CTRL_DOWN)  yd -= 0.05f;
+    } else if (jumping) {
+        if (isInWater() || isInLava()) yd += 0.04f;
+        else if (onGround)             yd = 0.42f;
+    }
+
+    xs *= 0.98f; yf *= 0.98f;
+
+    bool downNow = (btn & PSP_CTRL_DOWN) != 0;
+    if (flying) sneaking = false;
+    else if (downNow && !prevSneakBtn) sneaking = !sneaking;
+    prevSneakBtn = downNow;
+    if (sneaking) { xs *= 0.3f; yf *= 0.3f; }
+
+    if (bowPull > 0.0f) { xs *= 0.35f; yf *= 0.35f; }
+
+    // Sprinting: pushing the stick most of the way forward makes you run.
+    // Sneaking/aiming already scale xs,yf down above, so this naturally
+    // turns itself off while sneaking or drawing a bow.
+    const float SPRINT_PUSH = 0.85f;
+    sprinting = !flying && (yf >= SPRINT_PUSH);
+
+    walkDistO = walkDist;
+    float wx0 = x, wz0 = z;
+    travel(xs, yf);
+
+    extern int g_autoJump;
+    if (g_autoJump && onGround && horizontalCollision && !flying && !isInWater() && !isInLava()) {
+        float sy = sinf(yRot * 3.14159265f / 180.0f), cy = cosf(yRot * 3.14159265f / 180.0f);
+        float dirX = xs * cy + yf * sy, dirZ = yf * cy - xs * sy;
+        float d = sqrtf(dirX * dirX + dirZ * dirZ);
+        if (d > 0.01f) {
+            dirX /= d; dirZ /= d;
+            int ax = (int)floorf(x + dirX);
+            int az = (int)floorf(z + dirZ);
+            int stepY = (int)floorf(bb.y0 + 0.05f);
+            unsigned char step = worldBlock(&g_world, ax, stepY, az);
+            if (isSolidPhys(step) && !isFence(step) && !isFenceGate(step) && !isSlab(step)
+                && !isSolidPhys(worldBlock(&g_world, ax, stepY + 1, az))
+                && !isSolidPhys(worldBlock(&g_world, ax, stepY + 2, az)))
+                yd = 0.42f;
+        }
+    }
+
+    float wdx = x - wx0, wdz = z - wz0;
+    float distSq = wdx * wdx + wdz * wdz;
+
+    {
+        static std::vector<Entity*> nearby;
+        level->getEntities(this, bb.grow(0.2f, 0.0f, 0.2f), nearby);
+        for (unsigned int i = 0; i < nearby.size(); i++)
+            if (nearby[i] && nearby[i]->isPushable()) nearby[i]->push(this);
+    }
+
+    yBodyRotO = yBodyRot; walkAnimSpeedO = walkAnimSpeed;
+
+    float limbTgt = sqrtf(distSq) * 4.0f;
+    if (limbTgt > 1.0f) limbTgt = 1.0f;
+    walkAnimSpeed += (limbTgt - walkAnimSpeed) * 0.4f;
+    walkAnimPosO = walkAnimPos;
+    walkAnimPos += walkAnimSpeed;
+
+    const float RADDEG = 180.0f / 3.14159265f;
+    float bxd = x - xo, bzd = z - zo;
+    float sideDist = sqrtf(bxd * bxd + bzd * bzd);
+    float yBodyRotT = yBodyRot;
+    if (sideDist > 0.05f) yBodyRotT = atan2f(bxd, bzd) * RADDEG;
+    extern float g_attackAnim;
+    if (g_attackAnim > 0.0f) yBodyRotT = yRot;
+    float yBodyRotD = yBodyRotT - yBodyRot;
+    while (yBodyRotD < -180.0f) yBodyRotD += 360.0f;
+    while (yBodyRotD >= 180.0f) yBodyRotD -= 360.0f;
+    yBodyRot += yBodyRotD * 0.3f;
+    float headDiff = yRot - yBodyRot;
+    while (headDiff < -180.0f) headDiff += 360.0f;
+    while (headDiff >= 180.0f) headDiff -= 360.0f;
+    if (headDiff < -75.0f) headDiff = -75.0f;
+    if (headDiff >= 75.0f) headDiff = 75.0f;
+    yBodyRot = yRot - headDiff;
+    if (headDiff * headDiff > 50.0f * 50.0f) yBodyRot += headDiff * 0.2f;
+
+    oBob = bob; oTilt = tilt;
+    float tBob = xd * xd + zd * zd;
+    if (tBob > 0.00001f) { tBob = sqrtf(tBob); if (tBob > 0.1f) tBob = 0.1f; }
+    else                 { tBob = 0.0f; }
+    if (!onGround) tBob = 0.0f;
+    float tTilt = atanf(-yd * 0.2f) * 15.0f;
+    if (onGround) tTilt = 0.0f;
+    bob  += (tBob  - bob)  * 0.4f;
+    tilt += (tTilt - tilt) * 0.8f;
+    itemHandTick();
+
+    if (onGround) {
+        int fx = (int)floorf(x);
+        int fy = (int)floorf(y - PLAYER_EYE - 0.2f);
+        int fz = (int)floorf(z);
+        if (worldBlock(&g_world, fx, fy, fz) == BLOCK_ORE_REDSTONE)
+            redstoneOreInteract(&g_world, fx, fy, fz);
+    }
+
+    if (isWaterId(worldBlock(&g_world, (int)floorf(x), (int)floorf(y), (int)floorf(z)))) {
+        if (--airSupply == -20) {
+            airSupply = 0;
+            for (int i = 0; i < 8; i++) {
+                float ox = (float)rand() / RAND_MAX - (float)rand() / RAND_MAX;
+                float oy = (float)rand() / RAND_MAX - (float)rand() / RAND_MAX;
+                float oz = (float)rand() / RAND_MAX - (float)rand() / RAND_MAX;
+                particlesBubble(x + ox, y + oy, z + oz, xd, yd, zd);
+            }
+            hurt(0, 2);
+        }
+    } else {
+        airSupply = 300;
+    }
+
+    static bool s_wasInWater = false;
+    bool inWater = false;
+    {
+        int bx0 = (int)floorf(bb.x0), bx1 = (int)floorf(bb.x1);
+        int bz0 = (int)floorf(bb.z0), bz1 = (int)floorf(bb.z1);
+        int by0 = (int)floorf(bb.y0 + 0.4f), by1 = (int)floorf(bb.y1 - 0.4f);
+        for (int bx = bx0; bx <= bx1 && !inWater; ++bx)
+            for (int by = by0; by <= by1 && !inWater; ++by)
+                for (int bz = bz0; bz <= bz1 && !inWater; ++bz)
+                    if (isWaterId(worldBlock(&g_world, bx, by, bz))) inWater = true;
+    }
+    if (inWater && !s_wasInWater) doWaterSplashEffect();
+    s_wasInWater = inWater;
+}
+
+void LocalPlayer::doWaterSplashEffect() {
+    Entity::doWaterSplashEffect();
+
+    float surf = floorf(bb.y0) + 1.0f;
+    int n = 1 + (int)(bbWidth * 20.0f);
+    for (int i = 0; i < n; i++) {
+        float xo = (sharedRandom.nextFloat() * 2.0f - 1.0f) * bbWidth;
+        float zo = (sharedRandom.nextFloat() * 2.0f - 1.0f) * bbWidth;
+        particlesSplash(x + xo, surf, z + zo, xd, 0.0f, zd);
+    }
+}
+
+#include "world/entity/item_entity.h"
+#include "world/inventory/inventory.h"
+#include "util/mth.h"
+
+void LocalPlayer::die(Entity* source) {
+
+    stopSleepInBed(true, false);
+
+    auto dropOnDeath = [this](const ItemInstance& it) { drop(new ItemInstance(it), true); };
+    if (!inventory->isCreative()) {
+
+        for (int i = inventory->firstGridSlot(); i < inventory->getContainerSize(); ++i) {
+            ItemInstance* it = inventory->getItem(i);
+            if (it && !it->isNull()) dropOnDeath(*it);
+            inventory->clearSlot(i);
+        }
+        for (int i = 0; i < Inventory::HOTBAR; ++i) inventory->linkSlot(i, -1);
+
+        for (int i = 0; i < NUM_ARMOR; ++i) {
+            ItemInstance* it = getArmor(i);
+            if (!it) continue;
+            dropOnDeath(*it);
+            setArmor(i, nullptr);
+        }
+    }
+
+    yd = 0.1f;
+    if (source) {
+        xd = -cosf((hurtDir + yRot) * Mth::PI / 180.0f) * 0.1f;
+        zd = -sinf((hurtDir + yRot) * Mth::PI / 180.0f) * 0.1f;
+    } else {
+        xd = zd = 0.0f;
+    }
+    Mob::die(source);
+}
