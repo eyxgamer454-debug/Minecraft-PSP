@@ -31,6 +31,11 @@ public:
     float bowPull, bowTimeHeld;
     float eatAnim;
 
+    int   foodLevel;       // 0-5 pork chops, shown above the hearts
+    int   foodTickTimer;   // ticks toward the next chop lost / regen-or-starve step
+    void  eat();
+    void  foodTick(int difficulty);
+
     virtual bool isPlayer() { return true; }
     virtual int  getEntityTypeId() const;
     virtual int  getMaxHealth() { return 20; }

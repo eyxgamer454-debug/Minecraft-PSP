@@ -70,6 +70,8 @@ void LocalPlayer::aiStep(unsigned int btn, unsigned char lx, unsigned char ly) {
             static int s_regenTick = 0;
             if (++s_regenTick >= 12 * 20) { s_regenTick = 0; heal(1); }
         }
+
+        foodTick(level->getDifficulty());
     }
 
     if (btn & PSP_CTRL_SQUARE)   yRot += LOOK;

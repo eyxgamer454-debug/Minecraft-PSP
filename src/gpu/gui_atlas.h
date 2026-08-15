@@ -9,6 +9,7 @@
 #define GA_HOTBAR             0.0f,   0.0f, 180.0f,  22.0f
 #define GA_HOTBAR_CAP       166.0f,  92.0f,   2.0f,  22.0f
 #define GA_ICONS              0.0f,  50.0f,  88.0f,  27.0f
+#define GA_FOOD              102.0f,  40.0f,  18.0f,   9.0f
 #define GA_PSP_CIRCLE        87.0f, 109.0f,  15.0f,  13.0f
 #define GA_PSP_CROSS        121.0f, 100.0f,  15.0f,  13.0f
 #define GA_PSP_DOWN          55.0f, 100.0f,  13.0f,  17.0f
@@ -52,6 +53,8 @@
 #define GA_HOTBAR_Y         0.0f
 #define GA_ICONS_X          0.0f
 #define GA_ICONS_Y         50.0f
+#define GA_FOOD_X         102.0f
+#define GA_FOOD_Y          40.0f
 #define GA_SS_ARROW_X     158.0f
 #define GA_SS_ARROW_Y      24.0f
 #define GA_SS_CRAFTBTN_X  140.0f

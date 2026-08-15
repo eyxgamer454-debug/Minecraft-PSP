@@ -633,8 +633,8 @@ const char* getBlockDescription(short id, unsigned char data) {
                 return "Gives the user 1.5 Armor when worn.";
 
             case ITEM_APPLE: return "Restores health, and can be crafted into a golden apple.";
-            case ITEM_BREAD: return "Restores 2.5 Hearts.";
-            case ITEM_MUSHROOM_STEW: return "Restores 5 hearts.";
+            case ITEM_BREAD: return "Restores 2.5 Hunger.";
+            case ITEM_MUSHROOM_STEW: return "Restores 5 Hunger.";
             case ITEM_PORKCHOP_RAW: return "Collected by killing a pig, and can be cooked in a furnace. Restores health.";
             case ITEM_PORKCHOP_COOKED: return "Created by cooking a porkchop in a furnace. Restores health.";
             case ITEM_MELON: return "Can be cut up and eaten.";
@@ -665,7 +665,7 @@ const char* getBlockDescription(short id, unsigned char data) {
             case ITEM_BONE: return "Collected by killing a skeleton. Can be crafted into bone meal.";
             case ITEM_SUGAR: return "Used in the cake recipe.";
             case ITEM_BUCKET: return "Used to hold and transport water, lava and milk.";
-            case ITEM_CAKE: return "Restores 1.5 Hearts. Can be used 6 times.";
+            case ITEM_CAKE: return "Restores 1.5 Hunger. Can be used 6 times.";
             case ITEM_NETHER_BRICK: return "Used to form blocks of Nether bricks.";
             case ITEM_NETHER_QUARTZ: return "Quartz from the Nether, used to create Blocks of Quartz.";
             case ITEM_ARROW: return "Used as ammunition for bows.";
@@ -700,7 +700,7 @@ const char* getBlockDescription(short id, unsigned char data) {
         case BLOCK_LADDER: return "Used to climb vertically.";
         case BLOCK_TORCH: return "Used to create light. Torches also melt snow and ice.";
         case BLOCK_BED: return "Used to sleep until dawn. Changes your spawn point to the bed's position.";
-        case BLOCK_CAKE: return "Restores 1.5 Hearts. Can be used 6 times.";
+        case BLOCK_CAKE: return "Restores 1.5 Hunger. Can be used 6 times.";
         case BLOCK_CLAY: return "Can be baked into bricks in a furnace.";
         case BLOCK_SANDSTONE: return "Used as a building material.";
         case BLOCK_SAND: return "Collected using a shovel. Can be smelted into glass using the furnace. Is affected by gravity if there is no other tile underneath it.";
@@ -874,26 +874,33 @@ void hotbarDraw(MenuState& s) {
 
         const float armorW = 9.0f * step + hs;
         int armorVal = g_level.player->getArmorValue();
-        float hx0, hy, armorX, armorY, airX, airY;
+        float hx0, hy, armorX, armorY, airX, airY, foodX, foodY;
         if (!g_barOnTop) {
-            hx0    = 2.0f * HUD_ST_S;                          hy     = 2.0f * HUD_ST_S;
-            armorX = 480.0f - 2.0f * HUD_ST_S - armorW;        armorY = hy;
-            airX   = armorX;                                   airY   = hy + 10.0f * HUD_ST_S;
+            const float TOP = 2.0f * HUD_ST_S;
+            hx0    = TOP;                                       hy     = TOP + 10.0f * HUD_ST_S; // pushed down to make room above
+            armorX = 480.0f - 2.0f * HUD_ST_S - armorW;         armorY = TOP;
+            airX   = armorX;                                    airY   = TOP + 10.0f * HUD_ST_S;
 
             if (armorVal <= 0) airY = armorY;
+
+            // Pork chops take the hearts' old spot, directly above the hearts.
+            foodX = hx0;                                        foodY = TOP;
         } else {
             const float barW = 20.0f * HUD_N * HB_S;
             const float barX = (480.0f - barW) * 0.5f;
             const float gap  = 2.0f;
-            float row1 = HUD_HOTBAR_TOP - hs - gap;
-            float row2 = row1 - hs - gap;
+            float row1 = HUD_HOTBAR_TOP - hs - gap;  // hearts
+            float row2 = row1 - hs - gap;            // chops, directly above hearts
+            float row0 = row2 - hs - gap;            // armor / air, bumped up to make room
 
             const float POKE = 8.0f;
             hx0    = barX - POKE;                              hy     = row1;
-            armorX = barX - POKE;                              armorY = row2;
+            armorX = barX - POKE;                              armorY = row0;
 
             airX   = barX + barW - armorW + POKE;
-            airY   = (armorVal > 0) ? row2 : row1;
+            airY   = row0;
+
+            foodX = barX - POKE;                               foodY = row2;
         }
         textureBind(&s.guiAtlas);
         for (int i = 0; i < hearts; i++) {
@@ -910,6 +917,16 @@ void hotbarDraw(MenuState& s) {
             }
             if (hp >= (i + 1) * 2)   spriteDraw(&s.guiAtlas, hx, hyj, hs, hs, GA_ICONS_X + 52, 0 + GA_ICONS_Y, 9, 9, HUD_WHITE);
             else if (hp == i * 2 + 1) spriteDraw(&s.guiAtlas, hx, hyj, hs, hs, GA_ICONS_X + 61, 0 + GA_ICONS_Y, 9, 9, HUD_WHITE);
+        }
+
+        {
+            // Pork chops (survival hunger): 5 icons, no half states, sits right above the hearts.
+            int chops = g_level.player->foodLevel; if (chops < 0) chops = 0;
+            for (int i = 0; i < 5; i++) {
+                float fx = foodX + i * step;
+                spriteDraw(&s.guiAtlas, fx, foodY, hs, hs, GA_FOOD_X + 0, GA_FOOD_Y, 9, 9, HUD_WHITE);
+                if (i < chops) spriteDraw(&s.guiAtlas, fx, foodY, hs, hs, GA_FOOD_X + 9, GA_FOOD_Y, 9, 9, HUD_WHITE);
+            }
         }
 
         {

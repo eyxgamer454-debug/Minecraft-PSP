@@ -13,7 +13,32 @@ Player::Player(Level* level)
       bob(0), oBob(0), tilt(0), oTilt(0), bowPull(0), bowTimeHeld(0),
       eatAnim(0), sleeping(false), sleepCounter(0), bedX(0), bedY(0), bedZ(0),
       respawnX(0), respawnY(-1), respawnZ(0),
-      score(0) {}
+      score(0),
+      foodLevel(5), foodTickTimer(0) {}
+
+void Player::eat() {
+    if (foodLevel < 5) foodLevel++;
+}
+
+void Player::foodTick(int difficulty) {
+    if (difficulty == Difficulty::PEACEFUL) {
+        foodLevel = 5;
+        return;
+    }
+    const int DEPLETE_TICKS = 20 * 180; // one chop every ~3 minutes of play
+    const int EFFECT_TICKS  = 20 * 4;   // regen/starve check every ~4 seconds
+
+    if (++foodTickTimer % DEPLETE_TICKS == 0 && foodLevel > 0) foodLevel--;
+
+    if (foodTickTimer % EFFECT_TICKS == 0) {
+        if (foodLevel >= 5 && isAlive() && health < getMaxHealth()) {
+            heal(1);
+        } else if (foodLevel <= 0 && isAlive()) {
+            int floorHp = (difficulty == Difficulty::EASY) ? 10 : (difficulty == Difficulty::NORMAL) ? 1 : 0;
+            if (health > floorHp) hurt(0, 1);
+        }
+    }
+}
 
 Player::~Player() { delete inventory; }
 

@@ -479,7 +479,7 @@ void GameMode::handleInput(unsigned int pressed, unsigned int held) {
             bool lHeld = (held & PSP_CTRL_LTRIGGER) != 0;
 
             bool canEat = g_gameMode->isCreative() ||
-                          g_level.player->health < g_level.player->getMaxHealth();
+                          g_level.player->foodLevel < 5;
             if (lHeld && !s_eating && (pressed & PSP_CTRL_LTRIGGER) && canEat) {
                 s_eating = true; s_eatStart = sceKernelGetSystemTimeLow(); s_lastEmit = 0;
             }
@@ -499,8 +499,7 @@ void GameMode::handleInput(unsigned int pressed, unsigned int held) {
                     spawnEatParticles(icon, 10);
 
                     if (!g_gameMode->isCreative()) {
-                        int nutrition = ((FoodItem*)sel->getItem())->getNutrition();
-                        g_level.player->heal(nutrition);
+                        g_level.player->eat();
                         g_level.playSound(g_level.player, "random.burp", 0.5f,
                                           (rand() / (float)RAND_MAX) * 0.1f + 0.9f);
 
@@ -510,7 +509,7 @@ void GameMode::handleInput(unsigned int pressed, unsigned int held) {
 
                         ItemInstance* next = g_level.player->inventory->getSelected();
                         bool moreFood = next && next->getItem() && next->getItem()->isFood();
-                        bool stillHurt = g_level.player->health < g_level.player->getMaxHealth();
+                        bool stillHurt = g_level.player->foodLevel < 5;
                         if (lHeld && moreFood && stillHurt) {
                             s_eatStart = sceKernelGetSystemTimeLow(); s_lastEmit = 0;
                             g_level.player->eatAnim = 0.0f;
