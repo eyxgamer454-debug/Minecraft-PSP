@@ -30,7 +30,10 @@ struct TickNextTickData {
 #define WORLD_VIEW_DIST 64.0f
 
 #ifndef WORLD_SIZE_CHUNKS
-#define WORLD_SIZE_CHUNKS 16
+#define WORLD_SIZE_CHUNKS 0   // 0 = infinite: worldChunkInBounds() never rejects a chunk,
+                              // and the existing slot-streaming cache (worldStream) loads/
+                              // evicts a moving window around the player instead of trying
+                              // to keep the whole world resident.
 #endif
 
 static inline bool worldChunkInBounds(int cx, int cz) {
