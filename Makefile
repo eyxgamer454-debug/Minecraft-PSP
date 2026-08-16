@@ -1,6 +1,7 @@
 TARGET = mcpsp-menu
 OBJS = \
 	src/main.o \
+	src/client/i18n.o \
 	src/client/player/physics.o \
 	src/client/gamemode/gamemode.o \
 	src/client/player/player.o \
@@ -28,6 +29,7 @@ OBJS = \
 	src/client/gui/screens/screen_join.o \
 	src/client/gui/screens/screen_addserver.o \
 	src/client/gui/screens/screen_options.o \
+	src/client/gui/screens/screen_language.o \
 	src/client/gui/screens/screen_pause.o \
 	src/client/gui/screens/screen_dead.o \
 	src/client/gui/screens/screen_inbed.o \

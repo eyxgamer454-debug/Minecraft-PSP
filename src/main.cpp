@@ -27,6 +27,7 @@
 #include "client/gui/screens/world_icons.h"
 #include "client/player/player.h"
 #include "client/renderer/render.h"
+#include "client/i18n.h"
 
 #include "platform/time.h"
 #include "world/level/level.h"
@@ -139,6 +140,7 @@ int main(int argc, char* argv[]) {
     detectLowMemPsp();
     soundInit();
     optionsLoad();
+    langLoad();
 
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);

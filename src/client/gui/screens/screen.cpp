@@ -37,6 +37,7 @@ Screen* menuScreen(AppScreen which) {
         case SCREEN_JOIN:    return &joinScreen();
         case SCREEN_ADD_SERVER: return &addServerScreen();
         case SCREEN_OPTIONS: return &optionsScreen();
+        case SCREEN_LANGUAGE: return &languageScreen();
         case SCREEN_GAME:    break;
     }
     return 0;

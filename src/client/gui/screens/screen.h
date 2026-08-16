@@ -33,6 +33,7 @@ void joinListReset(MenuState& s);
 Screen& addServerScreen();
 void addServerFormReset(MenuState& s);
 Screen& optionsScreen();
+Screen& languageScreen();
 Screen& pauseScreen();
 Screen& craftScreen();
 Screen& furnaceScreen();

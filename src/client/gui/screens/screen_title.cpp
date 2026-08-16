@@ -12,18 +12,20 @@
 #include <pspkernel.h>
 
 #include "client/gui/screens/splashes.h"
+#include "client/i18n.h"
 
 static int s_splash = -1;
 
-static const float btnSizeV = 75.0f;
+static const float btnSizeV = 68.0f;
 static const float yBaseV   = 2.0f + VH / 3.0f;
-static const float spacingV = (VW - 3.0f * btnSizeV) / 4.0f;
-static PocketButton buttons[3] = {
+static const int   numButtons = 4;
+static const float spacingV = (VW - numButtons * btnSizeV) / (numButtons + 1.0f);
+static PocketButton buttons[numButtons] = {
     { (spacingV + 0 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f, 176.0f, 75.0f, "Join Game",  true },
     { (spacingV + 1 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f, 101.0f, 75.0f, "Start Game", true },
     { (spacingV + 2 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f,  26.0f, 75.0f, "Options",    true },
+    { (spacingV + 3 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f,  26.0f, 75.0f, "Language",   true },
 };
-static const int numButtons = 3;
 struct TitleScreen : Screen {
     void renderContent(MenuState& s);
     void handleInput(MenuState& s, unsigned int pressed, unsigned int held);
@@ -52,6 +54,10 @@ void TitleScreen::handleInput(MenuState& s, unsigned int pressed, unsigned int )
             joinListReset(s);
             screen = SCREEN_JOIN;
             statusMsg[0] = '\0';
+        } else if (selected == 3) {
+            s.langSelected = g_language;
+            screen = SCREEN_LANGUAGE;
+            statusMsg[0] = '\0';
         } else {
             optFocus = 1;
             optTabHighlight = optCategory;
@@ -68,6 +74,11 @@ void TitleScreen::renderContent(MenuState& s) {
     Texture& logo = s.logo; bool haveLogo = s.haveLogo;
     Texture& touchGui = s.touchGui; bool haveTouch = s.haveTouch;
     int& selected = s.selected;
+
+    buttons[0].label = T("Join Game",  "Unirse");
+    buttons[1].label = T("Start Game", "Jugar");
+    buttons[2].label = T("Options",    "Opciones");
+    buttons[3].label = T("Language",   "Idioma");
 
     const float LOGO_SCALE = 1.15f;
     float logoYV = 4.0f;
