@@ -17,7 +17,7 @@ BiomeId classifyBiome(float temperature, float downfall) {
     if (t < 0.97f) return (d < 0.35f) ? B_SHRUB : B_FOREST;
     if (d < 0.45f) return B_PLAINS;
     else if (d < 0.90f) return B_SEASONAL;
-    else return B_RAIN;
+    else return B_JUNGLE;  // hot + very wet corner = tropical jungle
 }
 
 void biomeSurface(BiomeId b, unsigned char* top, unsigned char* material) {

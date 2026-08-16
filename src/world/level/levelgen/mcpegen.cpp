@@ -288,8 +288,8 @@ bool McpeGen::postProcessPhase(World* w, int chunkX, int chunkZ, int phase) {
     int oFor = (int)((forestNoise.getValue(xo * fss, zo * fss) / 8 + random.nextFloat() * 4 + 4) / 3);
     int forests = 0;
     if (random.nextInt(10) == 0) forests += 1;
+    if (biome == B_JUNGLE)   forests += oFor + 6;  // thick jungle canopy — denser than any other biome
     if (biome == B_FOREST)   forests += oFor + 2;
-    if (biome == B_RAIN)     forests += oFor + 2;
     if (biome == B_SEASONAL) forests += oFor + 1;
     if (biome == B_TAIGA)    forests += oFor + 1;
     if (biome == B_DESERT)   forests -= 20;
@@ -305,7 +305,7 @@ bool McpeGen::postProcessPhase(World* w, int chunkX, int chunkZ, int phase) {
         } else if (biome == B_FOREST) {
             if (random.nextInt(5) == 0) treeBirch(w, random, tx, ty, tz);
             else { random.nextInt(3); treeOak(w, random, tx, ty, tz); }
-        } else if (biome == B_RAIN) {
+        } else if (biome == B_JUNGLE) {
             random.nextInt(3);
             treeOak(w, random, tx, ty, tz);
         } else {
@@ -321,13 +321,16 @@ bool McpeGen::postProcessPhase(World* w, int chunkX, int chunkZ, int phase) {
 
     for (int i = 0; i < 2; i++) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; flowerFeature(w, random, x, y, z, BLOCK_FLOWER); }
     if (random.nextInt(2) == 0) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; flowerFeature(w, random, x, y, z, BLOCK_ROSE); }
-    if (random.nextInt(4) == 0) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; mushroomFeature(w, random, x, y, z, BLOCK_MUSHROOM_BROWN); }
+    if (random.nextInt(biome == B_JUNGLE ? 2 : 4) == 0) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; mushroomFeature(w, random, x, y, z, BLOCK_MUSHROOM_BROWN); }
     if (random.nextInt(8) == 0) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; mushroomFeature(w, random, x, y, z, BLOCK_MUSHROOM_RED); }
 
     for (int i = 0; i < 10; i++) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; reedsFeature(w, random, x, y, z); }
 
     int cacti = (biome == B_DESERT) ? 5 : 0;
     for (int i = 0; i < cacti; i++) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; cactusFeature(w, random, x, y, z); }
+
+    int melons = (biome == B_JUNGLE) ? 2 : 0;
+    for (int i = 0; i < melons; i++) { int x = xo + random.nextInt(16) + 8, y = random.nextInt(128), z = zo + random.nextInt(16) + 8; flowerFeature(w, random, x, y, z, BLOCK_MELON); }
 
     return false; }
 
