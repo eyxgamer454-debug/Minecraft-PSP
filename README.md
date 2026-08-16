@@ -1,1 +1,1 @@
-Minecraft-PSP edition-creditos Flavius
+Minecraft-PSP by Astrox-creditos Flavius
