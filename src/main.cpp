@@ -28,6 +28,7 @@
 #include "client/player/player.h"
 #include "client/renderer/render.h"
 #include "client/i18n.h"
+#include "platform/audio/music.h"
 
 #include "platform/time.h"
 #include "world/level/level.h"
@@ -300,6 +301,13 @@ int main(int argc, char* argv[]) {
             (!navOnly || menuSelectionSig(s) != sigBefore))
             soundPlay("random.click", 1.0f, 1.0f);
 
+        if (screenBefore != SCREEN_GAME && s.screen == SCREEN_GAME) {
+            musicPlay("data/sound/music.raw");
+        } else if (screenBefore == SCREEN_GAME && s.screen != SCREEN_GAME) {
+            musicStop();
+        }
+        musicRefill();
+
         touchGuiSetLoaded(s, screenNeedsTouchGui(s.screen, g_worldBuilt));
 
         panoramaSetLoaded(s.screen != SCREEN_GAME && !g_worldBuilt);
@@ -502,6 +510,7 @@ int main(int argc, char* argv[]) {
         guEndFrame();
     }
 
+    musicStop();
     soundShutdown();
     worldGenWorkerStop();
 

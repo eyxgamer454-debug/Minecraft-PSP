@@ -1,4 +1,5 @@
 #include "platform/audio/sound.h"
+#include "platform/audio/music.h"
 
 #include <pspkernel.h>
 #include <pspaudio.h>
@@ -89,38 +90,37 @@ static int findFirst(const char* name) {
 }
 
 void soundMixBlock(short* out) {
+    static int mix[SAMPLE_COUNT];
+    memset(mix, 0, sizeof(mix));
+
     bool any = false;
     for (int v = 0; v < MAX_VOICES; v++) {
         if (g_voices[v].playing) { any = true; break; }
     }
-    if (!any) {
-        memset(out, 0, SAMPLE_COUNT * 2 * sizeof(short));
-        return;
-    }
 
-    static int mix[SAMPLE_COUNT];
+    if (any) {
+        for (int v = 0; v < MAX_VOICES; v++) {
+            Voice* s = &g_voices[v];
+            if (!s->playing) continue;
 
-    memset(mix, 0, sizeof(mix));
+            unsigned int pos = s->pos;
+            for (int i = 0; i < SAMPLE_COUNT; i++) {
+                unsigned int frame = pos >> 16;
+                if (frame >= s->frameCount) { s->playing = 0; break; }
 
-    for (int v = 0; v < MAX_VOICES; v++) {
-        Voice* s = &g_voices[v];
-        if (!s->playing) continue;
+                int sample1 = s->frames[frame] << 8;
+                int sample2 = (frame + 1 < s->frameCount) ? (s->frames[frame + 1] << 8) : sample1;
+                int frac = pos & 0xFFFF;
+                int interp = sample1 + (((sample2 - sample1) * frac) >> 16);
 
-        unsigned int pos = s->pos;
-        for (int i = 0; i < SAMPLE_COUNT; i++) {
-            unsigned int frame = pos >> 16;
-            if (frame >= s->frameCount) { s->playing = 0; break; }
-
-            int sample1 = s->frames[frame] << 8;
-            int sample2 = (frame + 1 < s->frameCount) ? (s->frames[frame + 1] << 8) : sample1;
-            int frac = pos & 0xFFFF;
-            int interp = sample1 + (((sample2 - sample1) * frac) >> 16);
-
-            mix[i] += (interp * s->vol) >> 12;
-            pos += s->step;
+                mix[i] += (interp * s->vol) >> 12;
+                pos += s->step;
+            }
+            s->pos = pos;
         }
-        s->pos = pos;
     }
+
+    musicMixInto(mix, SAMPLE_COUNT);
 
     for (int i = 0; i < SAMPLE_COUNT; i++) {
         int sample = mix[i];

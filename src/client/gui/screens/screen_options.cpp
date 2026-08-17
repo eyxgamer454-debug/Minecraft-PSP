@@ -77,6 +77,38 @@ static const int g_optionRowCount[OPT_CATEGORIES] = { 5, 6, 10, 1 };
 static const char* g_optionCategoryNames[OPT_CATEGORIES] = { "Game", "Controls", "Graphics", "Audio" };
 static int g_optionValueIdx[OPT_CATEGORIES][OPT_MAX_ROWS];
 
+#include "client/i18n.h"
+
+// Display-only Spanish text for the options screen. These never touch
+// row.label / row.values / category names directly — those stay in
+// English forever since they're also used as the options.txt save keys
+// and (for "Off"/"On") compared against in optionRowIsBoolean().
+static const char* trOpt(const char* en) {
+    if (!g_language) return en;
+    struct Pair { const char* en; const char* es; };
+    static const Pair kPairs[] = {
+        {"Game","Juego"}, {"Controls","Controles"}, {"Graphics","Graficos"}, {"Audio","Audio"},
+        {"Interface","Interfaz"}, {"Input","Entrada"}, {"Experimental","Experimental"},
+        {"Difficulty","Dificultad"}, {"Third Person","Tercera Persona"}, {"Autosave","Autoguardado"},
+        {"Bar On Top","Barra Arriba"}, {"Show FPS","Mostrar FPS"},
+        {"Sensitivity","Sensibilidad"}, {"Dead Zone","Zona Muerta"}, {"Invert Y-axis","Invertir Eje Y"},
+        {"Auto Jump","Auto Salto"}, {"Block Outline","Contorno de Bloque"}, {"Show Coordinates","Mostrar Coordenadas"},
+        {"View Distance","Distancia de Vista"}, {"Clouds","Nubes"}, {"Leaves","Hojas"},
+        {"View Bobbing","Balanceo de Vista"}, {"Beautiful Skies","Cielos Bonitos"},
+        {"Animate Textures","Animar Texturas"}, {"Particles","Particulas"},
+        {"Smooth Lighting","Iluminacion Suave"}, {"Mipmapping","Mipmapping"}, {"Hide GUI","Ocultar GUI"},
+        {"Sound Volume","Volumen de Sonido"},
+        {"Off","No"}, {"On","Si"},
+        {"Peaceful","Pacifico"}, {"Easy","Facil"}, {"Normal","Normal"}, {"Hard","Dificil"},
+        {"Tiny","Diminuta"}, {"Short","Corta"}, {"Far","Lejana"},
+        {"Fast","Rapido"}, {"Fancy","Detallado"},
+        {"Options","Opciones"}, {"Back","Atras"},
+    };
+    for (unsigned i = 0; i < sizeof(kPairs)/sizeof(kPairs[0]); i++)
+        if (strcmp(en, kPairs[i].en) == 0) return kPairs[i].es;
+    return en;
+}
+
 extern float g_viewDist;
 extern int   g_viewBobbing;
 extern int   g_fancyGraphics;
@@ -360,12 +392,12 @@ void OptionsScreen::renderContent(MenuState& s) {
 
         float barBtnH = MENU_BAR_H;
         {
-            float lb = 4.0f * MENU_PX + menuBarButtonW(s, "Back");
-            drawMenuHeader(s, "Options", 0.0f, VW, MENU_BAR_H, MENU_BAR_TEXT, lb, VW - lb);
+            float lb = 4.0f * MENU_PX + menuBarButtonW(s, trOpt("Back"));
+            drawMenuHeader(s, trOpt("Options"), 0.0f, VW, MENU_BAR_H, MENU_BAR_TEXT, lb, VW - lb);
         }
         {
-            float bw = menuBarButtonW(s, "Back");
-            menuBarButton(s, 4.0f * MENU_PX, bw, "Back", optFocus == 2);
+            float bw = menuBarButtonW(s, trOpt("Back"));
+            menuBarButton(s, 4.0f * MENU_PX, bw, trOpt("Back"), optFocus == 2);
         }
 
         const float catBtn = OPT_CAT_BTN, catPitch = OPT_CAT_PITCH;
@@ -392,10 +424,10 @@ void OptionsScreen::renderContent(MenuState& s) {
                            GA_SS_OPTCAT_Y + kCatIconUV[i][1], OPT_CAT_ICON, OPT_CAT_ICON, WHITE);
             } else {
 
-                float tw = fontTextWidth(&font, g_optionCategoryNames[i]) * UI_SCALE;
+                float tw = fontTextWidth(&font, trOpt(g_optionCategoryNames[i])) * UI_SCALE;
                 fontDrawTextShadow(&font, OPT_CAT_X * UI_SCALE + (catBtn * UI_SCALE - tw) / 2.0f,
                                    (cY + (catBtn - 8.0f) / 2.0f) * UI_SCALE,
-                                   g_optionCategoryNames[i], tabActive ? 0xFFA0FFFFu : 0xFFE0E0E0u, UI_SCALE);
+                                   trOpt(g_optionCategoryNames[i]), tabActive ? 0xFFA0FFFFu : 0xFFE0E0E0u, UI_SCALE);
             }
         }
 
@@ -430,7 +462,7 @@ void OptionsScreen::renderContent(MenuState& s) {
 
             if (row.group)
                 fontDrawTextShadow(&font, (itemsX + 2.0f) * UI_SCALE, (rY - kOptHeaderH + 2.0f) * UI_SCALE,
-                                   row.group, 0xFFFFFFFFu, UI_SCALE);
+                                   trOpt(row.group), 0xFFFFFFFFu, UI_SCALE);
             bool rowHovered = (optFocus == 1 && optItemHighlight == r);
             bool rowDisabled = optionRowDisabled(optCategory, r);
 
@@ -450,7 +482,7 @@ void OptionsScreen::renderContent(MenuState& s) {
                     snprintf(valBuf, sizeof(valBuf), "%d%%", row.percentMin + valIdx * row.percentStep);
                     valTxt = valBuf;
                 } else if (valIdx >= 0 && valIdx < 4) {
-                    valTxt = row.values[valIdx];
+                    valTxt = trOpt(row.values[valIdx]);
                 }
             }
             float widgetX  = itemsX + itemsW - (isBool ? togW : sliderW) - kWidgetMargin;
@@ -459,7 +491,7 @@ void OptionsScreen::renderContent(MenuState& s) {
             if (labelMax < 8.0f) labelMax = 8.0f;
 
             fontDrawTextClipped(&font, itemsX * UI_SCALE, (rY + (rowH - 8.0f) / 2.0f) * UI_SCALE,
-                                row.label, labelCol, UI_SCALE, labelMax);
+                                trOpt(row.label), labelCol, UI_SCALE, labelMax);
 
             if (isBool) {
 
