@@ -35,6 +35,8 @@ void guStartFrame(unsigned int clearColor);
 
 void guEndFrame(void);
 
+void guSetPowerSaveMode(int enabled);
+
 void guFinishFrame(void);
 void guPresent(void);
 

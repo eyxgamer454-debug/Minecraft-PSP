@@ -153,6 +153,12 @@ void guFinishFrame(void) {
     profEnd(PROF_GESYNC);
 }
 
+static int g_powerSaveMode = 0;
+
+void guSetPowerSaveMode(int enabled) {
+    g_powerSaveMode = enabled;
+}
+
 void guPresent(void) {
 
     void* addr = (void*)((unsigned int)sceGeEdramGetAddr() + (unsigned int)g_fb[g_drawIdx]);
@@ -162,6 +168,10 @@ void guPresent(void) {
 
     profBegin(PROF_VBLANK);
     sceDisplayWaitVblankStart();
+    // On light (non-gameplay) screens we render at ~30fps instead of ~60 —
+    // an extra vblank wait here means half the frames, half the GPU/CPU
+    // work, for a screen where nothing actually needs 60fps smoothness.
+    if (g_powerSaveMode) sceDisplayWaitVblankStart();
     profEnd(PROF_VBLANK);
 }
 

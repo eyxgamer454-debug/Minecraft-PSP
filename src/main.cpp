@@ -314,6 +314,25 @@ int main(int argc, char* argv[]) {
         }
         musicRefill();
 
+        {
+            // Menus don't need the CPU pinned at max clock or rendered at
+            // 60fps — only actual gameplay does. Scale down on everything
+            // else to cut heat/battery use; scale back up the moment play
+            // resumes. Only touches the syscall on an actual transition.
+            static bool s_heavyMode = true;  // matches the 333MHz set at boot
+            bool heavyNow = (s.screen == SCREEN_GAME);
+            if (heavyNow != s_heavyMode) {
+                if (heavyNow) {
+                    scePowerSetClockFrequency(333, 333, 166);
+                    guSetPowerSaveMode(0);
+                } else {
+                    scePowerSetClockFrequency(222, 222, 111);
+                    guSetPowerSaveMode(1);
+                }
+                s_heavyMode = heavyNow;
+            }
+        }
+
         touchGuiSetLoaded(s, screenNeedsTouchGui(s.screen, g_worldBuilt));
 
         panoramaSetLoaded(s.screen != SCREEN_GAME && !g_worldBuilt);
