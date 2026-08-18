@@ -30,6 +30,7 @@ OBJS = \
 	src/client/gui/screens/screen_addserver.o \
 	src/client/gui/screens/screen_options.o \
 	src/client/gui/screens/screen_language.o \
+	src/client/gui/screens/screen_credits.o \
 	src/client/gui/screens/screen_pause.o \
 	src/client/gui/screens/screen_dead.o \
 	src/client/gui/screens/screen_inbed.o \

@@ -30,10 +30,12 @@ void createFormReset(MenuState& s);
 Screen& joinScreen();
 
 void joinListReset(MenuState& s);
+void requestGameExit();
 Screen& addServerScreen();
 void addServerFormReset(MenuState& s);
 Screen& optionsScreen();
 Screen& languageScreen();
+Screen& creditsScreen();
 Screen& pauseScreen();
 Screen& craftScreen();
 Screen& furnaceScreen();

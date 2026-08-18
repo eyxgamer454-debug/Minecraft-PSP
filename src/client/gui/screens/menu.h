@@ -7,7 +7,7 @@
 #include "world/level/storage/worldlist.h"
 #include "world/level/storage/external_servers.h"
 
-enum AppScreen { SCREEN_TITLE, SCREEN_WORLDS, SCREEN_DELETE, SCREEN_CREATE, SCREEN_JOIN, SCREEN_ADD_SERVER, SCREEN_OPTIONS, SCREEN_LANGUAGE, SCREEN_GAME };
+enum AppScreen { SCREEN_TITLE, SCREEN_WORLDS, SCREEN_DELETE, SCREEN_CREATE, SCREEN_JOIN, SCREEN_ADD_SERVER, SCREEN_OPTIONS, SCREEN_LANGUAGE, SCREEN_CREDITS, SCREEN_GAME };
 
 static const float UI_SCALE = 2.0f;
 
@@ -26,6 +26,7 @@ struct MenuState {
     Texture logo;         bool haveLogo;
     Texture dirtBg;       bool haveBg;
     Texture touchGui;     bool haveTouch;
+    Texture langIcon;     bool haveLangIcon;
     Texture defaultWorld; bool haveDefaultWorld;
 
     WorldList worlds;

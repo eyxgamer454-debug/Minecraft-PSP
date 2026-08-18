@@ -66,6 +66,8 @@ static void detectLowMemPsp(void) {
 
 static volatile int g_exitRequested = 0;
 
+void requestGameExit() { g_exitRequested = 1; }
+
 static int exitCallback(int , int , void* ) {
     g_exitRequested = 1;
     return 0;
@@ -110,8 +112,12 @@ static void touchGuiSetLoaded(MenuState& s, bool want) {
 
         textureForgetFailures();
         s.haveTouch = loadTex(&s.touchGui, "data/images/gui/touchgui.png");
+        s.haveLangIcon = loadTex(&s.langIcon, "data/images/gui/lang_icon.png");
     }
-    else { textureFree(&s.touchGui); s.haveTouch = false; }
+    else {
+        textureFree(&s.touchGui); s.haveTouch = false;
+        textureFree(&s.langIcon); s.haveLangIcon = false;
+    }
 }
 
 static bool loadFnt(Font* out, const char* rel) {

@@ -16,16 +16,14 @@
 
 static int s_splash = -1;
 
-static const float btnSizeV = 68.0f;
-static const float yBaseV   = 2.0f + VH / 3.0f;
-static const int   numButtons = 4;
-static const float spacingV = (VW - numButtons * btnSizeV) / (numButtons + 1.0f);
-static PocketButton buttons[numButtons] = {
-    { (spacingV + 0 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f, 176.0f, 75.0f, "Join Game",  true },
-    { (spacingV + 1 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f, 101.0f, 75.0f, "Start Game", true },
-    { (spacingV + 2 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f,  26.0f, 75.0f, "Options",    true },
-    { (spacingV + 3 * (btnSizeV + spacingV)) * UI_SCALE, yBaseV * UI_SCALE, btnSizeV * UI_SCALE, 0.0f,  26.0f, 75.0f, "Language",   true },
-};
+// Classic vertical menu: Singleplayer / Multiplayer / (Options | Quit Game).
+// selected: 0=Singleplayer 1=Multiplayer 2=Options 3=Quit
+static const float listW  = 210.0f;
+static const float rowH   = 20.0f;
+static const float rowGap = 5.0f;
+static const float listX  = (VW - listW) / 2.0f;
+static const float listY0 = 2.0f + VH / 3.0f;
+
 struct TitleScreen : Screen {
     void renderContent(MenuState& s);
     void handleInput(MenuState& s, unsigned int pressed, unsigned int held);
@@ -41,44 +39,54 @@ void TitleScreen::handleInput(MenuState& s, unsigned int pressed, unsigned int )
     int& optItemHighlight = s.optItemHighlight;
     int& optCategory = s.optCategory;
 
-    if (pressed & PSP_CTRL_RIGHT)
-        selected = (selected < 0) ? 1 : (selected + 1) % numButtons;
-    if (pressed & PSP_CTRL_LEFT)
-        selected = (selected < 0) ? 1 : (selected + numButtons - 1) % numButtons;
+    if (pressed & PSP_CTRL_DOWN) {
+        if (selected < 0)      selected = 0;
+        else if (selected == 0) selected = 1;
+        else                     selected = 2;
+    }
+    if (pressed & PSP_CTRL_UP) {
+        if (selected < 0)      selected = 0;
+        else if (selected >= 2) selected = 1;
+        else if (selected == 1) selected = 0;
+        else                     selected = 2;
+    }
+    if (pressed & PSP_CTRL_LEFT)  { if (selected == 3) selected = 2; }
+    if (pressed & PSP_CTRL_RIGHT) { if (selected == 2) selected = 3; }
 
     if ((pressed & PSP_CTRL_CROSS) && selected >= 0) {
-        if (selected == 1) {
+        if (selected == 0) {
             screen = SCREEN_WORLDS;
             statusMsg[0] = '\0';
-        } else if (selected == 0) {
+        } else if (selected == 1) {
             joinListReset(s);
             screen = SCREEN_JOIN;
             statusMsg[0] = '\0';
-        } else if (selected == 3) {
-            s.langSelected = g_language;
-            screen = SCREEN_LANGUAGE;
-            statusMsg[0] = '\0';
-        } else {
+        } else if (selected == 2) {
             optFocus = 1;
             optTabHighlight = optCategory;
             optItemHighlight = 0;
             screen = SCREEN_OPTIONS;
             statusMsg[0] = '\0';
+        } else if (selected == 3) {
+            requestGameExit();
         }
+    }
+
+    if (pressed & PSP_CTRL_SQUARE) {
+        screen = SCREEN_CREDITS;
+        statusMsg[0] = '\0';
+    }
+    if (pressed & PSP_CTRL_TRIANGLE) {
+        s.langSelected = g_language;
+        screen = SCREEN_LANGUAGE;
+        statusMsg[0] = '\0';
     }
 }
 
 void TitleScreen::renderContent(MenuState& s) {
     Font& font = s.font; bool haveFont = s.haveFont;
-    Texture& guiAtlas = s.guiAtlas; bool haveGui = s.haveGui;
     Texture& logo = s.logo; bool haveLogo = s.haveLogo;
-    Texture& touchGui = s.touchGui; bool haveTouch = s.haveTouch;
     int& selected = s.selected;
-
-    buttons[0].label = T("Join Game",  "Unirse");
-    buttons[1].label = T("Start Game", "Jugar");
-    buttons[2].label = T("Options",    "Opciones");
-    buttons[3].label = T("Language",   "Idioma");
 
     const float LOGO_SCALE = 1.15f;
     float logoYV = 4.0f;
@@ -118,10 +126,35 @@ void TitleScreen::renderContent(MenuState& s) {
         sceGuEnable(GU_DEPTH_TEST);
     }
 
-    if (haveGui && haveTouch && haveFont) {
+    if (haveFont) {
         sceGuDisable(GU_DEPTH_TEST);
-        for (int i = 0; i < numButtons; i++)
-            pocketButtonDraw(&font, &guiAtlas, &touchGui, &buttons[i], i == selected, UI_SCALE);
+
+        const float halfW = (listW - rowGap) / 2.0f;
+
+        guiTButton(s, listX, listY0, listW, rowH, selected == 0);
+        guiTButtonLabel(s, listX, listY0, listW, rowH,
+                        T("Singleplayer", "Un Jugador"), selected == 0, true, MENU_BAR_TEXT);
+
+        guiTButton(s, listX, listY0 + (rowH + rowGap), listW, rowH, selected == 1);
+        guiTButtonLabel(s, listX, listY0 + (rowH + rowGap), listW, rowH,
+                        T("Multiplayer", "Multijugador"), selected == 1, true, MENU_BAR_TEXT);
+
+        float row3Y = listY0 + 2.0f * (rowH + rowGap);
+        guiTButton(s, listX, row3Y, halfW, rowH, selected == 2);
+        guiTButtonLabel(s, listX, row3Y, halfW, rowH,
+                        T("Options...", "Opciones..."), selected == 2, true, MENU_BAR_TEXT);
+        guiTButton(s, listX + halfW + rowGap, row3Y, halfW, rowH, selected == 3);
+        guiTButtonLabel(s, listX + halfW + rowGap, row3Y, halfW, rowH,
+                        T("Quit Game", "Salir"), selected == 3, true, MENU_BAR_TEXT);
+
+        float cbw = 60.0f, cbh = 16.0f;
+        guiTButton(s, VW - cbw - 6.0f, VH - cbh - 6.0f, cbw, cbh, false);
+        guiTButtonLabel(s, VW - cbw - 6.0f, VH - cbh - 6.0f, cbw, cbh,
+                        T("Credits", "Creditos"), false, true, MENU_BAR_TEXT);
+        guiTButton(s, 6.0f, VH - cbh - 6.0f, cbw, cbh, false);
+        guiTButtonLabel(s, 6.0f, VH - cbh - 6.0f, cbw, cbh,
+                        T("Language", "Idioma"), false, true, MENU_BAR_TEXT);
+
         sceGuEnable(GU_DEPTH_TEST);
     }
 
