@@ -40,18 +40,27 @@ void TitleScreen::handleInput(MenuState& s, unsigned int pressed, unsigned int )
     int& optCategory = s.optCategory;
 
     if (pressed & PSP_CTRL_DOWN) {
-        if (selected < 0)      selected = 0;
+        if (selected < 0)       selected = 0;
         else if (selected == 0) selected = 1;
-        else                     selected = 2;
+        else if (selected == 1) selected = 2;
+        else if (selected <= 3) selected = 4;
+        else                     selected = 0;
     }
     if (pressed & PSP_CTRL_UP) {
-        if (selected < 0)      selected = 0;
+        if (selected < 0)       selected = 0;
+        else if (selected >= 4) selected = 2;
         else if (selected >= 2) selected = 1;
         else if (selected == 1) selected = 0;
-        else                     selected = 2;
+        else                     selected = 4;
     }
-    if (pressed & PSP_CTRL_LEFT)  { if (selected == 3) selected = 2; }
-    if (pressed & PSP_CTRL_RIGHT) { if (selected == 2) selected = 3; }
+    if (pressed & PSP_CTRL_LEFT) {
+        if (selected == 3) selected = 2;
+        else if (selected == 5) selected = 4;
+    }
+    if (pressed & PSP_CTRL_RIGHT) {
+        if (selected == 2) selected = 3;
+        else if (selected == 4) selected = 5;
+    }
 
     if ((pressed & PSP_CTRL_CROSS) && selected >= 0) {
         if (selected == 0) {
@@ -69,9 +78,17 @@ void TitleScreen::handleInput(MenuState& s, unsigned int pressed, unsigned int )
             statusMsg[0] = '\0';
         } else if (selected == 3) {
             requestGameExit();
+        } else if (selected == 4) {
+            s.langSelected = g_language;
+            screen = SCREEN_LANGUAGE;
+            statusMsg[0] = '\0';
+        } else if (selected == 5) {
+            screen = SCREEN_CREDITS;
+            statusMsg[0] = '\0';
         }
     }
 
+    // Kept as quick shortcuts too, in case a button/keyboard mapping wants them.
     if (pressed & PSP_CTRL_SQUARE) {
         screen = SCREEN_CREDITS;
         statusMsg[0] = '\0';
@@ -148,12 +165,12 @@ void TitleScreen::renderContent(MenuState& s) {
                         T("Quit Game", "Salir"), selected == 3, true, MENU_BAR_TEXT);
 
         float cbw = 60.0f, cbh = 16.0f;
-        guiTButton(s, VW - cbw - 6.0f, VH - cbh - 6.0f, cbw, cbh, false);
+        guiTButton(s, VW - cbw - 6.0f, VH - cbh - 6.0f, cbw, cbh, selected == 5);
         guiTButtonLabel(s, VW - cbw - 6.0f, VH - cbh - 6.0f, cbw, cbh,
-                        T("Credits", "Creditos"), false, true, MENU_BAR_TEXT);
-        guiTButton(s, 6.0f, VH - cbh - 6.0f, cbw, cbh, false);
+                        T("Credits", "Creditos"), selected == 5, true, MENU_BAR_TEXT);
+        guiTButton(s, 6.0f, VH - cbh - 6.0f, cbw, cbh, selected == 4);
         guiTButtonLabel(s, 6.0f, VH - cbh - 6.0f, cbw, cbh,
-                        T("Language", "Idioma"), false, true, MENU_BAR_TEXT);
+                        T("Language", "Idioma"), selected == 4, true, MENU_BAR_TEXT);
 
         sceGuEnable(GU_DEPTH_TEST);
     }
