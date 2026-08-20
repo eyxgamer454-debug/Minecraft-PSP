@@ -52,7 +52,7 @@ const SoundType g_tileSounds[SOUND_TYPE_COUNT] = {
      { 1.0f,  1.0f, "step.stone",   "step.stone" },
      { 1.0f,  1.0f, "step.wood",    "step.wood"  },
      { 1.0f,  1.0f, "step.gravel",  "step.gravel"},
-     { 0.5f,  1.0f, "step.cloth",   "step.grasswalk" },
+     { 0.5f,  1.0f, "step.cloth",   "step.cloth" },
      { 1.0f,  1.5f, "step.stone",   "step.stone" },
      { 1.0f,  1.0f, "random.glass", "step.stone" },
      { 1.0f,  1.0f, "step.cloth",   "step.cloth" },

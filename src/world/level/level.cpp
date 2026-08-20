@@ -467,13 +467,25 @@ void Level::playStepSound(Entity* e, int x, int y, int z, int tileId) const {
     } else if (isLiquidId((unsigned char)soundTile)) {
         return;
     }
+    // The grass block shares its SoundType with leaves/flowers/roses (all
+    // "soft plant" materials), but only walking on the ground should use
+    // the custom step sound — hitting/placing those other blocks must not.
+    if (soundTile == BLOCK_GRASS) {
+        playSound(e, "step.grasswalk", 0.5f * 0.25f, 1.0f);
+        return;
+    }
     const SoundType& s = g_tileSounds[Tile::tiles[soundTile]->soundType];
     if (!s.stepSound) return;
     playSound(e, s.stepSound, s.volume * 0.25f, s.pitch);
 }
 
 void Level::playLandSound(Entity* e, int , int , int , int tileId) const {
-    const SoundType& s = g_tileSounds[Tile::tiles[tileId & 0xFF]->soundType];
+    int soundTile = tileId & 0xFF;
+    if (soundTile == BLOCK_GRASS) {
+        playSound(e, "step.grasswalk", 0.5f * 0.5f, 1.0f * 0.75f);
+        return;
+    }
+    const SoundType& s = g_tileSounds[Tile::tiles[soundTile]->soundType];
     if (!s.stepSound) return;
     playSound(e, s.stepSound, s.volume * 0.5f, s.pitch * 0.75f);
 }
